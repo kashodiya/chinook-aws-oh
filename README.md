@@ -1,10 +1,20 @@
-# Chinook digital music store.
+# Chinook Music Store
+
+A cloud-native music browsing and purchasing application built on AWS.
 
 ## Overview
 Chinook is a digital music store. It contains realistic data about customers, employees, music tracks, albums, artists, invoices, and playlists.
 
-## System details
-**Core Components:**
+## Project Implementation
+
+This implementation of the Chinook Music Store is built using:
+
+- **Frontend**: React.js
+- **Backend**: Java Spring Boot
+- **Database**: PostgreSQL on RDS
+- **Infrastructure**: Terraform on AWS
+
+## Core Components
 
 **Customer App/Website**
 - Browse music by artist, album, or genre
@@ -13,7 +23,7 @@ Chinook is a digital music store. It contains realistic data about customers, em
 - Create and manage playlists
 - View purchase history
 
-**Admin Dashboard**
+**Admin Dashboard** (Future Implementation)
 - Add new music (artists, albums, tracks)
 - Set prices and manage inventory
 - View sales reports
@@ -26,135 +36,77 @@ Chinook is a digital music store. It contains realistic data about customers, em
 - Track inventory and sales
 
 **Key Features:**
-- User accounts with login.
 - Shopping cart functionality
+- Secure payment processing (simulated)
+- Responsive design for all devices
 
 **Basic Flow:**
 1. Customer browses music
 2. Adds songs to cart
 3. Pays for purchase
-4. Downloads or streams music
-5. System tracks the sale and updates inventory
-
-In short the customers can discover, buy, and enjoy digital music while the business tracks everything behind the scenes.
-
-# Chinook Digital Music Store - AWS Implementation Design
+4. System tracks the sale and updates inventory
 
 ## Architecture Overview
 
+Our implementation follows a modern cloud-native architecture on AWS:
+
 ### Frontend Layer
-**Amazon S3 + CloudFront**
-- **S3 Buckets:**
-  - `chinook-web-static`: Hosts React/Angular SPA files (HTML, CSS, JS)
-  - `chinook-music-files`: Stores audio files (MP3, FLAC, etc.)
-  - `chinook-album-artwork`: Stores cover art and images
-- **CloudFront CDN:** Global content delivery for fast loading
-- **Route 53:** DNS management and custom domain
+- **Amazon S3**: Hosts the React SPA static files
+- **CloudFront**: CDN for global content delivery and caching
+- **Application Load Balancer**: Routes traffic to backend services
 
-### API Gateway Layer
-**Amazon API Gateway (REST API)**
-- **Endpoints Structure:**
-  - `/api/v1/music/*` - Music catalog operations
-  - `/api/v1/customers/*` - Customer management
-  - `/api/v1/orders/*` - Order processing
-  - `/api/v1/playlists/*` - Playlist operations
-  - `/api/v1/admin/*` - Admin operations
-
-### Business Logic Layer (AWS Lambda Functions)
-
-#### Music Catalog Service
-- **Function:** `chinook-music-service`
-- **Responsibilities:**
-  - Get artists, albums, tracks
-  - Search functionality
-  - Genre and media type management
-  - Music metadata operations
-
-#### Customer Service
-- **Function:** `chinook-customer-service`
-- **Responsibilities:**
-  - User registration/login
-  - Profile management
-  - Authentication with JWT tokens
-  - Customer preferences
-
-#### Order Service
-- **Function:** `chinook-order-service`
-- **Responsibilities:**
-  - Shopping cart management
-  - Invoice creation
-  - Payment processing integration
-  - Purchase history
-
-#### Playlist Service
-- **Function:** `chinook-playlist-service`
-- **Responsibilities:**
-  - Create/update/delete playlists
-  - Add/remove tracks from playlists
-  - Share playlist functionality
-
-#### Admin Service
-- **Function:** `chinook-admin-service`
-- **Responsibilities:**
-  - Employee management
-  - Sales reporting
-  - System administration
-  - Content management
+### Backend Layer
+- **ECS Fargate**: Containerized Java Spring Boot API
+- **API Structure**:
+  - `/api/artists/*` - Artist management
+  - `/api/albums/*` - Album operations
+  - `/api/tracks/*` - Track operations
+  - `/api/genres/*` - Genre management
 
 ### Database Layer
-**Amazon RDS PostgreSQL**
-- **Configuration:**
+- **Amazon RDS PostgreSQL**:
+  - Stores music catalog data
+  - Manages customer information
+  - Tracks orders and purchases
   - Multi-AZ deployment for high availability
-  - Read replicas for improved performance
-  - Automated backups and snapshots
-- **Connection:** Lambda functions connect via RDS Proxy for connection pooling
 
-### Additional AWS Services
+### Infrastructure Components
+- **VPC**: Custom network with public and private subnets
+- **Security Groups**: Controlled access to resources
+- **IAM Roles**: Least privilege access for services
+- **S3 Buckets**: Static content and asset storage
 
-#### Security & Authentication
-- **AWS Cognito:** User authentication and authorization
-- **AWS IAM:** Role-based access control
-- **AWS Secrets Manager:** Database credentials and API keys
+### CI/CD Pipeline
+- **GitHub Actions**: Automated build and deployment
+- **ECR**: Container registry for backend images
+- **S3 Deployment**: Frontend static asset deployment
 
-#### Payment Integration
-- **AWS Lambda:** Integration with Stripe/PayPal APIs
-- **AWS SQS:** Queue payment processing tasks
-- **AWS SNS:** Payment notifications and receipts
-
-#### Monitoring & Logging
-- **CloudWatch:** Application logs and metrics
-- **X-Ray:** Distributed tracing
-- **CloudTrail:** API call auditing
-
-#### File Processing
-- **AWS Lambda:** Audio file processing and metadata extraction
-- **AWS MediaConvert:** Audio format conversion if needed
+### Directory Structure
+```
+.
+├── .github/workflows      # CI/CD pipeline configurations
+├── backend                # Java Spring Boot API
+├── frontend               # React.js frontend application
+├── infrastructure         # Terraform IaC for AWS resources
+└── database               # Database scripts and migrations
+```
 
 ## Data Flow Examples
 
 ### Music Browse Flow
 1. User visits S3-hosted website via CloudFront
-2. Frontend calls API Gateway `/api/v1/music/artists`
-3. API Gateway triggers `chinook-music-service` Lambda
-4. Lambda queries RDS PostgreSQL for artists data
-5. Response returned through API Gateway to frontend
-6. Album artwork loaded from S3 via CloudFront
+2. Frontend calls backend API `/api/artists`
+3. ECS Fargate container processes the request
+4. Spring Boot service queries RDS PostgreSQL for artists data
+5. Response returned through ALB to frontend
+6. Album artwork loaded from placeholder images (future: S3 via CloudFront)
 
 ### Purchase Flow
 1. User adds items to cart (frontend state)
-2. User initiates checkout → API Gateway `/api/v1/orders/create`
-3. `chinook-order-service` Lambda processes order
-4. Payment integration via external API (Stripe)
-5. On success, order recorded in PostgreSQL
-6. Customer receives download links to S3 music files
-7. Email notification via SES
-
-### Admin Dashboard Flow
-1. Admin authenticates via Cognito
-2. Admin dashboard (S3-hosted) calls `/api/v1/admin/*` endpoints
-3. `chinook-admin-service` Lambda handles requests
-4. Data retrieved from PostgreSQL and returned
-5. Reports generated and displayed
+2. User initiates checkout
+3. Frontend processes order (simulated payment)
+4. On success, order confirmation displayed
+5. (Future implementation: Order recorded in PostgreSQL)
 
 ## Database Schema (PostgreSQL on RDS)
 
@@ -162,20 +114,21 @@ In short the customers can discover, buy, and enjoy digital music while the busi
 - **artists** - Artist information
 - **albums** - Album metadata
 - **tracks** - Individual song details
+- **genres** - Music genres
+- **media_types** - Audio format types
 - **customers** - Customer profiles
 - **employees** - Staff information
 - **invoices** - Purchase records
-- **invoice_lines** - Individual purchase items
+- **invoice_items** - Individual purchase items
 - **playlists** - User-created playlists
-- **playlist_tracks** - Songs in playlists
+- **playlist_track** - Songs in playlists
 
 ## Security Considerations
 
 ### Authentication & Authorization
-- Cognito handles user authentication
-- JWT tokens for API access
-- IAM roles for Lambda function permissions
-- API Gateway request validation
+- IAM roles for service permissions
+- Security groups for network access control
+- Environment variables for sensitive configuration
 
 ### Data Protection
 - RDS encryption at rest
@@ -183,43 +136,97 @@ In short the customers can discover, buy, and enjoy digital music while the busi
 - HTTPS/TLS for all communications
 - VPC for database isolation
 
-### Access Control
-- Pre-signed URLs for music file downloads
-- Time-limited download links
-- Geographic content restrictions if needed
-
 ## Scalability Features
 
 ### Auto-scaling
-- Lambda functions scale automatically
-- RDS read replicas for database scaling
+- ECS Fargate tasks scale based on demand
+- RDS can scale vertically as needed
 - CloudFront global edge locations
-- API Gateway built-in scaling
+- ALB handles traffic distribution
 
 ### Performance Optimization
-- Lambda connection pooling via RDS Proxy
+- Connection pooling in Spring Boot
 - CloudFront caching strategies
 - Database query optimization
-- S3 Transfer Acceleration for uploads
+- Efficient containerization
 
 ## Deployment Strategy
 
 ### Infrastructure as Code
-- **AWS CDK/CloudFormation** for resource provisioning
-- **AWS SAM** for Lambda deployment
-- **CI/CD Pipeline** using CodePipeline and CodeBuild
+- **Terraform** for AWS resource provisioning
+- **GitHub Actions** for CI/CD pipeline
 
 ### Environment Management
-- Separate environments: dev, staging, production
 - Environment-specific configurations
-- Blue/green deployment for zero downtime
+- Container-based deployment for consistency
 
-## Cost Optimization
+## Getting Started
 
-### Serverless Benefits
-- Pay-per-request Lambda pricing
-- No idle server costs
-- Automatic scaling reduces over-provisioning
-- S3 storage classes for different access patterns
+### Prerequisites
 
+- AWS CLI configured with appropriate permissions
+- Terraform installed
+- Java 17 or higher
+- Node.js 18 or higher
+- Docker (optional for local development)
+
+### Local Development
+
+You can start both the frontend and backend with a single script:
+
+```bash
+./start-local-dev.sh
+```
+
+This will start:
+- Backend at http://localhost:8080/api
+- Frontend at http://localhost:51188
+
+To stop the servers:
+```bash
+./stop-local-dev.sh
+```
+
+#### Manual Start
+
+##### Backend
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+The API will be available at http://localhost:8080/api
+
+##### Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The frontend will be available at http://localhost:51188
+
+### Deployment
+
+#### Infrastructure
+
+```bash
+cd infrastructure/terraform
+terraform init
+terraform apply
+```
+
+## Implementation Status
+
+See [Implementation Summary](./docs/implementation-summary.md) for details on what has been implemented and next steps.
+
+## Future Enhancements
+
+1. User authentication system
+2. Admin dashboard for content management
+3. Real music file storage and streaming
+4. Enhanced search capabilities
+5. Playlist management features
 

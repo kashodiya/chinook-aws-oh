@@ -1,0 +1,80 @@
+
+
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci-cd.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci-cd.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Run tests
+      run: |
+        cd frontend
+        npm test -- --watchAll=false
+    
+    - name: Build
+      run: |
+        cd frontend
+        npm run build
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: build
+        path: frontend/build
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: build
+        path: frontend/build
+    
+    - name: Deploy to S3
+      run: |
+        aws s3 sync frontend/build/ s3://cao-frontend/ --delete
+    
+    - name: Invalidate CloudFront cache
+      run: |
+        aws cloudfront create-invalidation --distribution-id $(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items!=null] | [?contains(Aliases.Items, 'cao-frontend')] | [0].Id" --output text) --paths "/*"
+
