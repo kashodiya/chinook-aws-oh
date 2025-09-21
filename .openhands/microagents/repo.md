@@ -7,3 +7,5 @@
 - Use us-east-1 region.
 - Do not store sensitive details like AWS Account number, token, secrets in the code repo. Always use environment variables to keep sensitive information. 
 - Assume that the development environment already have access to the AWS resources.
+- All the terraform resources name should be prefixed with project name "cao" (it stands for Chinook AWS OH)
+- Database tables and sample data are defined in database/scripts/chinook.sql
