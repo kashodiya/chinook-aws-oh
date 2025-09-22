@@ -30,12 +30,12 @@ jobs:
     - name: Build with Maven
       run: |
         cd backend
-        ./mvnw clean package -DskipTests
+        mvn clean package -DskipTests
     
     - name: Run tests
       run: |
         cd backend
-        ./mvnw test
+        mvn test
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
